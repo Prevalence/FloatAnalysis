@@ -3,4 +3,13 @@
 rm exampleTranslator.lo
 make -f demoMakefile
 echo "========================================================================================================="
-./demoTranslator test.C
+
+function translate() {
+	for i in `ls *.C`
+	do 
+		./demoTranslator "$i"
+	done
+}
+#./demoTranslator test.C
+
+translate
