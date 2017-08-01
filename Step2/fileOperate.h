@@ -304,7 +304,7 @@ string judge(string s){
 
 void out_to_checking(){
 	//the write operate;
-    ofstream examplefile("checking.cc");
+    ofstream examplefile("conditions.txt");
     if (examplefile.is_open())
     {
 		
