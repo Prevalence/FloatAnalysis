@@ -9,7 +9,7 @@ klee example.bc
 : > ./result.txt #clear the result.txt
 for ktest_file in `ls ./klee-last`
 do
-	ktest-tool --write-floats klee-last/$ktest_file
+ktest-tool --write-floats klee-last/$ktest_file
 done
 
 cd ./checking
@@ -21,6 +21,8 @@ clang++-3.4 analyze.cc
 
 for checking_file in `ls ./checking`
 do
-	clang++-3.4 ./checking/$checking_file
-	./checking/a.out
+clang++-3.4 ./checking/$checking_file
+echo'\n'========='\n'
+./a.out
+echo'\n'========='\n'
 done
