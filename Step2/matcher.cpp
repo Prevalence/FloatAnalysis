@@ -26,6 +26,7 @@ using namespace clang::ast_matchers;
 using namespace clang::driver;
 using namespace clang::tooling;
 
+//declare struct replacePair 
 struct ReplaceTypePair {
     std::string originType;
     std::string replaceType;
@@ -34,11 +35,14 @@ struct ReplaceTypePair {
     }
 };
 
+//define replacepairs
 const ReplaceTypePair INTEGER("INTEGER", "int");
-const ReplaceTypePair RATIONAL("RATIONAL", "double");
-const ReplaceTypePair DYADIC("DYADIC", "float");
+const ReplaceTypePair RATIONAL("RATIONAL", "int");
+const ReplaceTypePair DYADIC("DYADIC", "int");
 const ReplaceTypePair LAZY_BOOLEAN("LAZY_BOOLEAN", "bool");
-const ReplaceTypePair REAL("REAL", "double");
+const ReplaceTypePair REAL("REAL", "int");
+const ReplaceTypePair DOUBLE("double", "int");
+const ReplaceTypePair FLOAT("float", "int");
 const ReplaceTypePair COMPLEX("COMPLEX", "unknown");
 
 static llvm::cl::OptionCategory MatcherSampleCategory(
@@ -46,38 +50,50 @@ static llvm::cl::OptionCategory MatcherSampleCategory(
 
 class TypeIdentifier;
 
+//NumaTypeVisitor extends TypeVisitor
 class NumaTypeVisitor: public TypeVisitor<NumaTypeVisitor> {
 public:
     NumaTypeVisitor() :
             typeName(""), flag(false) {
     }
-
+    //recordType extends tagtype extends type.getAsCXXRecordDecl()
+//Retrieves the CXXRecordDecl that this type refers to, either because the type is a RecordType or because it is the injected-class-name
+//type of a class template or class template partial specialization.
+//we get the CXXRecordDecl->RecordDecl->TagDecl->TypeDecl->NameDecl.getNameAsString()
+//return a string mo ban
     void VisitRecordType(const RecordType *T) {
         if (typeName.compare(T->getAsCXXRecordDecl()->getNameAsString()) == 0) {
             flag = true;
         };
         return;
     }
-
+    //PointerType->getPointeeType == QualType
+    //QualType.split()->Divides a QualType into its unqualified type and a set of local qualifiers.
+    //return SplitQualType->Ty means Type ->The locally-unqualified type
     void VisitPointerType(const PointerType *T) {
         return Visit(T->getPointeeType().split().Ty);
     }
-
+    //->ReferenceType yin yong 
     void VisitLValueReferenceType(const LValueReferenceType *T) {
         return Visit(T->getPointeeType().split().Ty);
     }
-
+    //Retrieve the type named by the qualified-id.
+    //return QualType jing xin she ji
     void VisitElaboratedType(const ElaboratedType *T) {
         return Visit(T->getNamedType().split().Ty);
     }
-
+    //same
     void VisitArrayType(const ArrayType *T) {
         return Visit(T->getElementType().split().Ty);
     }
-
+    
     bool isDerivedFrom(const Type *T, std::string typeName) {
+	if(typeName.compare("float")||typeName.compare("double")){
+	   	this->flag = true;
+	}else{
+	     	this->flag = false;
+	}
         this->typeName = typeName;
-        this->flag = false;
         Visit(T);
         return flag;
     }
@@ -212,7 +228,11 @@ public:
             Rewriter.ReplaceText(sourceRange, REAL.replaceType);
         } else if (visitor.isDerivedFrom(T, COMPLEX.originType)) {
             Rewriter.ReplaceText(sourceRange, COMPLEX.replaceType);
-        }
+        } else if (visitor.isDerivedFrom(T, DOUBLE.originType)) {
+            Rewriter.ReplaceText(sourceRange, DOUBLE.replaceType);
+	} else if (visitor.isDerivedFrom(T, FLOAT.originType)) {
+	    Rewriter.ReplaceText(sourceRange, FLOAT.replaceType);
+	}
 
     }
 private:
@@ -220,9 +240,10 @@ private:
     NumaTypeVisitor visitor;
 };
 
+// I don't use it .
 // In iRRAM programs,the entry point of main function is via function 'void compute()'
 // We rewrite the function 'void compute()' to 'int main()'
-class MainFuncHandler: public MatchFinder::MatchCallback {
+/*class MainFuncHandler: public MatchFinder::MatchCallback {
 public:
     MainFuncHandler(Rewriter &Rewriter) :
             Rewriter(Rewriter) {
@@ -250,7 +271,7 @@ public:
     }
 private:
     Rewriter &Rewriter;
-};
+};*/
 
 class RemoveHandler: public MatchFinder::MatchCallback {
 public:
@@ -291,7 +312,7 @@ private:
 class MyASTConsumer: public ASTConsumer {
 public:
     MyASTConsumer(Rewriter &R) :
-            HandlerForiRRAM(R), HandlerForMainFunc(R), HandlerForNamespace(R), HandlerForIOStream(
+            HandlerForiRRAM(R),/* HandlerForMainFunc(R), */HandlerForNamespace(R), HandlerForIOStream(
                     R), HandlerForRemove(R), HandlerForiRRAMMethod(R) {
         // Add a matcher to find iRRAM variable declaration or function declaration or parameter declaration
         // e.g. -----------------------
@@ -323,8 +344,12 @@ public:
         // e.g. -----------------------
         //        using namespace iRRAM;
         //      -----------------------
+        
+         // I don't use it        
+
         Matcher.addMatcher(usingDirectiveDecl().bind("iRRAMUsingDirectiveDecl"),
                 &HandlerForNamespace);
+        
 
         //Add a matcher to find using declaration of iRRAM
         // e.g. -----------------------
@@ -334,10 +359,10 @@ public:
                 &HandlerForNamespace);
 
         //Add a matcher to find the 'void compute()' function
-        Matcher.addMatcher(
+        /*Matcher.addMatcher(
                 functionDecl(hasType(asString("void (void)")),
                         hasName("compute")).bind("mainFuncDecl"),
-                &HandlerForMainFunc);
+                &HandlerForMainFunc);*/
 
         // Add a matcher to remove 'iRRAM_initialize' function
         Matcher.addMatcher(
@@ -371,7 +396,7 @@ public:
 
 private:
     iRRAMHandler HandlerForiRRAM;
-    MainFuncHandler HandlerForMainFunc;
+    //MainFuncHandler HandlerForMainFunc;
     NamespaceHandler HandlerForNamespace;
     IOStreamHandler HandlerForIOStream;
     RemoveHandler HandlerForRemove;
