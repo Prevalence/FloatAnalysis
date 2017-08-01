@@ -1,0 +1,4 @@
+1. 'expression.txt' include all the constraints, you can pick a constraint write in the 'example.txt'
+2. Run the 'a.out', then you will achieve a new 'example.c' according to the 'example.txt'.
+3. Use KLEE-FP get the test.
+4. Run 'ktest.sh', you will get all the results in the 'result.txt' file.
