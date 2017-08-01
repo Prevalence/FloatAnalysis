@@ -26,7 +26,7 @@
 
    注意：
 
-   - 推荐使用1.51版本的rose，因为经过尝试，高版本的boost似乎极易出现问题，而现版本rose会检查boost的版本是否高于1.51。
+   - 推荐使用1.51版本的boost，因为经过尝试，高版本的boost似乎极易出现问题，而现版本rose会检查boost的版本是否高于1.51。
 
    - 直接使用`wget`下载boost可能比较慢，可以直接下载一个boost的压缩包
 
@@ -36,7 +36,7 @@
 
    - 如果你使用的确实是1.51版本的boost，别忘了网页中的提示**When compiling boost versions 1.53 and earlier, add "-sNO_COMPRESSION=1 -sNO_ZLIB=1" to the "b2" command before or after the other "-s" switch.**记得要加上这部分的参数
 
-   - 网页中的命令都是在下载下来的boost解压后的文件夹内执行	
+     - 网页中的命令都是在下载下来的boost解压后的文件夹内执行
 
    **安装boost成功后boost_installation文件夹下会出现include和lib文件夹**
 
