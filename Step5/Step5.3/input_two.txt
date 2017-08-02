@@ -1,0 +1,2 @@
+hhh.cpp
+line:1,statement:c==3,bool:1

@@ -1,0 +1,3 @@
+hhh.cpp:
+There are no errors in this file!
+******
