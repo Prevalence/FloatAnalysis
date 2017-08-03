@@ -15,9 +15,19 @@ void insertIntoIf(SgStatement* parent);
 void travel(SgStatement* statement);
 int containDouble(SgNode* parent);
 void print(SgNode* printNode);
+bool isMeet(SgDeclarationStatementPtrList& list,int index);
 vector<SgFunctionDeclaration*> filter(SgDeclarationStatementPtrList& list);
 string NTS(SgNode* node){
 	return SgNodeHelper::nodeToString(node);
+}
+
+bool isMeet(SgDeclarationStatementPtrList& list,int index){
+	string node=SgNodeHelper::nodeToString(list[index]);
+	if(list[index]->get_file_info()->isCompilerGenerated()==false&&node[0]!='_'&&node[1]!='_'&&isSgFunctionDeclaration(list[index])!=NULL&&isSgFunctionDeclaration(list[index])->get_definition()!=NULL&&isSgFunctionDeclaration(list[index])->get_definition()->get_body()!=NULL){
+		return true;
+	}else{
+		return false;
+	}
 }
 
 
@@ -25,12 +35,21 @@ vector<SgFunctionDeclaration*> filter(SgDeclarationStatementPtrList& list){
 	vector<SgFunctionDeclaration*> myList;
 	int size=list.size();
 	int index;
-	for(index=0;index<size;index++){
+	bool start=false;
+	for(index=size-1;index>=0;index--){
 		string node=SgNodeHelper::nodeToString(list[index]);
-		if(node.size()<2){
-			myList.push_back(isSgFunctionDeclaration(list[index]));
-		}else if(node[0]!='_'&&node[1]!='_'){
-			myList.push_back(isSgFunctionDeclaration(list[index]));
+		if(list[index]->get_file_info()->isCompilerGenerated()==false&&node.find("operator")==-1){
+			if(node.size()<2&&isSgFunctionDeclaration(list[index])!=NULL&&isSgFunctionDeclaration(list[index])->get_definition()!=NULL&&isSgFunctionDeclaration(list[index])->get_definition()->get_body()!=NULL){
+				start=true;
+				myList.push_back(isSgFunctionDeclaration(list[index]));
+			}else if(node[0]!='_'&&node[1]!='_'&&isSgFunctionDeclaration(list[index])&&isSgFunctionDeclaration(list[index])->get_definition()!=NULL&&isSgFunctionDeclaration(list[index])->get_definition()->get_body()!=NULL){
+				start=true;
+				myList.push_back(isSgFunctionDeclaration(list[index]));
+			}		
+		}else{
+			if(start){
+				break;
+			}
 		}
 	}
 	std::cout << myList.size() << std::endl;
@@ -75,29 +94,25 @@ SgStatement* build(int line,string stmt) {
 }
 
 void insertIntoIf(SgStatement* parent){
-	//std::cout << SgNodeHelper::numChildren(SgNodeHelper::getFirstChild(isSgIfStmt(parent)->get_conditional()));
-	//print(
-
-//(SgNodeHelper::getFirstChild(isSgIfStmt(parent)->get_conditional())->get_traversalSuccessorContainer())[1]
-
-//);	
-	SgStatement* statement=getFirstStatement(isSgBasicBlock(SgNodeHelper::getTrueBranch(isSgIfStmt(parent))));
+	SgStatement* statement;
 	string info;
-	//if(containDouble(SgNodeHelper::getFirstChild(isSgIfStmt(parent)->get_conditional()))){	
-		info=NTS(SgNodeHelper::getFirstChild(isSgIfStmt(parent)));
-		info=info.substr(0,info.size()-1);
-		insertStatementBefore(statement,build(statement->get_file_info()->get_line(),info));//insertBefore
-		statement=SageInterface::getNextStatement(statement);
-	//}
+	info=NTS(SgNodeHelper::getFirstChild(isSgIfStmt(parent)));
+	info=info.substr(0,info.size()-1);
+	statement=getFirstStatement(isSgBasicBlock(SgNodeHelper::getTrueBranch(isSgIfStmt(parent))));
+	insertStatementBefore(statement,build(statement->get_file_info()->get_line(),info));//insertBefore
+	statement=SageInterface::getNextStatement(statement);
 	travel(statement);
 	if(SgNodeHelper::getFalseBranch(isSgIfStmt(parent))){
-		SgStatement* statement2=getFirstStatement(isSgBasicBlock(SgNodeHelper::getTrueBranch(SgNodeHelper::getFalseBranch(isSgIfStmt(parent)))));
-		//if(containDouble(SgNodeHelper::getFirstChild(isSgIfStmt(parent)->get_conditional()))){
+		SgStatement* statement2;
+		if(isSgIfStmt(SgNodeHelper::getFalseBranch(isSgIfStmt(parent)))){
 			info=NTS(SgNodeHelper::getFirstChild(SgNodeHelper::getFalseBranch(isSgIfStmt(parent))));
 			info=info.substr(0,info.size()-1);
+			statement2=getFirstStatement(isSgBasicBlock(SgNodeHelper::getTrueBranch(SgNodeHelper::getFalseBranch(isSgIfStmt(parent)))));
 			insertStatementBefore(statement2,build(statement2->get_file_info()->get_line(),info));//insertBefore
 			statement2=SageInterface::getNextStatement(statement2);
-		//}
+		}else{
+			statement2=getFirstStatement(isSgBasicBlock(SgNodeHelper::getFalseBranch(isSgIfStmt(parent))));
+		}
 		travel(statement2);
 	}
 }
@@ -168,11 +183,17 @@ int main( int argc, char * argv[] )
 	int index;
 	SgStatement* statement;
 	for(index=0;index<size;index++){
-		SgBasicBlock* body=list[index]->get_definition()->get_body();
-		pushScopeStack(body);
-		statement=getFirstStatement(topScopeStack());		
-		travel(statement);
-		popScopeStack();
+		if(list[index]->get_definition()!=NULL){
+			SgBasicBlock* body=list[index]->get_definition()->get_body();
+			pushScopeStack(body);
+			if(isSgScopeStatement(topScopeStack())){
+				statement=getFirstStatement(topScopeStack());
+				travel(statement);
+			}
+			popScopeStack();
+		}else{
+			print(list[index]);
+		}
 	}
      return backend(project);
    }
